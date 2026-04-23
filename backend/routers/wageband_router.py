@@ -7,6 +7,22 @@ import auth as auth_module
 
 router = APIRouter(prefix="/api/wageband", tags=["wageband"])
 
+# ── Company-wide benefit constants ──────────────────────────────────────────
+FOOD_VOUCHER_BGN = 200.0        # Monthly food voucher (BGN) – all employees
+HEALTH_INS_BGN   = None         # Additional health insurance (BGN) – TBD
+BGN_TO_EUR       = 1.95583      # Fixed peg since 1999
+
+def _benefits():
+    fv_eur = round(FOOD_VOUCHER_BGN / BGN_TO_EUR, 2) if FOOD_VOUCHER_BGN else None
+    hi_eur = round(HEALTH_INS_BGN  / BGN_TO_EUR, 2) if HEALTH_INS_BGN  else None
+    return {
+        "food_voucher_bgn": FOOD_VOUCHER_BGN,
+        "food_voucher_eur": fv_eur,
+        "health_ins_bgn":   HEALTH_INS_BGN,
+        "health_ins_eur":   hi_eur,
+        "health_ins_note":  "TBD – to be defined" if HEALTH_INS_BGN is None else None,
+    }
+
 
 @router.get("/overview")
 def get_overview(
@@ -32,7 +48,8 @@ def get_overview(
     below_min = sum(1 for p in positions if p.band_position and "\u26a0" in p.band_position and not is_trainee(p))
     below_min_trainee = sum(1 for p in positions if p.band_position and "\u26a0" in p.band_position and is_trainee(p))
     below_target = sum(1 for p in positions if p.band_position and "\u25b2" in p.band_position)
-    on_target = sum(1 for p in positions if p.band_position and ("\u2713" in p.band_position or "\u2605" in p.band_position))
+    on_target = sum(1 for p in positions if p.band_position and "\u2713" in p.band_position)
+    above_max = sum(1 for p in positions if p.band_position and "\u2605" in p.band_position)
     no_data = sum(1 for p in positions if not p.band_position or p.band_position == "\u2013")
 
     # By section
@@ -66,14 +83,16 @@ def get_overview(
                 dept_groups[dg]["on_target"] += 1
 
     return {
+        "benefits": _benefits(),
         "summary": {
             "total": total,
             "below_min": below_min,
             "below_min_trainee": below_min_trainee,
             "below_target": below_target,
             "on_target": on_target,
+            "above_max": above_max,
             "no_data": no_data,
-            "pct_on_target": round(on_target / total * 100, 1) if total > 0 else 0
+            "pct_on_target": round((on_target + above_max) / total * 100, 1) if total > 0 else 0
         },
         "by_section": sections,
         "by_department": dept_groups
@@ -115,7 +134,10 @@ def get_detail(
             "actual_net": p.actual_net,
             "band_position": p.band_position,
             "cost_center": p.cost_center,
-            "employee_type": emp_types.get(p.erp_id, "Regular") or "Regular"
+            "employee_type": emp_types.get(p.erp_id, "Regular") or "Regular",
+            "food_voucher_bgn": FOOD_VOUCHER_BGN,
+            "health_ins_bgn":   HEALTH_INS_BGN,
+            "total_comp_bgn":   round((p.actual_net or 0) + FOOD_VOUCHER_BGN + (HEALTH_INS_BGN or 0), 2) if p.actual_net else None
         }
         for p in positions
     ]
@@ -213,8 +235,14 @@ def get_transparency(
         fte = emp.fte
         department = emp.department_en or emp.department
 
+    benefits = _benefits()
     return {
         "generated_date": date.today().isoformat(),
+        "food_voucher_bgn": benefits["food_voucher_bgn"],
+        "food_voucher_eur": benefits["food_voucher_eur"],
+        "health_ins_bgn":   benefits["health_ins_bgn"],
+        "health_ins_eur":   benefits["health_ins_eur"],
+        "health_ins_note":  benefits["health_ins_note"],
         "erp_id": erp_id,
         "position_en": bp.en_title or bp.position_bg,
         "position_bg": bp.position_bg,

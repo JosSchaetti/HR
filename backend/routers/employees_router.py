@@ -58,7 +58,7 @@ def get_stats(
 
     from datetime import date, timedelta
     today = date.today()
-    cutoff = today - timedelta(days=365)
+    cutoff = today - timedelta(days=180)
     total = db.query(models.Employee).count()
     active = db.query(models.Employee).filter(models.Employee.status == "Active").count()
     inactive = db.query(models.Employee).filter(models.Employee.status == "Inactive").count()

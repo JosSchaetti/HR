@@ -14,6 +14,8 @@ from routers.wageband_router import router as wageband_router
 from routers.employees_router import router as employees_router
 from routers.payroll_router import router as payroll_router
 from routers.users_router import router as users_router
+from routers.review_router import router as review_router
+from routers.qual_router import router as qual_router
 
 app = FastAPI(title="Glatec HR Platform", version="1.0.0", docs_url="/api/docs", redoc_url=None)
 
@@ -30,6 +32,8 @@ app.include_router(wageband_router)
 app.include_router(employees_router)
 app.include_router(payroll_router)
 app.include_router(users_router)
+app.include_router(review_router)
+app.include_router(qual_router)
 
 frontend_dir = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
@@ -49,6 +53,7 @@ def ensure_users():
                 ("maria", "Maria",           "manager", "Manager2026"),
                 ("hr",    "HR Team",         "hr",      "HR2026"),
                 ("lohn",  "Lohnbuchhaltung", "payroll", "Payroll2026"),
+                ("qs",    "QM Team",          "qs",      "QS2026"),
             ]
             for uname, fname, role, pw in defaults:
                 u = models.User(
@@ -60,6 +65,15 @@ def ensure_users():
             print("[startup] User angelegt: jos/Admin2026, maria/Manager2026, hr/HR2026, lohn/Payroll2026")
         else:
             print(f"[startup] {db.query(models.User).count()} User vorhanden - OK")
+            # Ensure QS user exists (added later)
+            if not db.query(models.User).filter(models.User.username == "qs").first():
+                qs_user = models.User(
+                    username="qs", full_name="QM Team", role="qs",
+                    hashed_password=auth_module.hash_password("QS2026"), is_active=True
+                )
+                db.add(qs_user)
+                db.commit()
+                print("[startup] QS-User angelegt: qs/QS2026")
     except Exception as e:
         print(f"[startup] Fehler: {e}")
     finally:
@@ -123,3 +137,4 @@ def serve_spa(full_path: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+ 

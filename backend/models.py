@@ -112,3 +112,64 @@ class BudgetControl(Base):
     release_status = Column(String, nullable=True)
     released_by = Column(String, nullable=True)
     release_date = Column(Date, nullable=True)
+
+
+class WorkCenter(Base):
+    __tablename__ = "work_centers"
+    id         = Column(Integer, primary_key=True, index=True)
+    code       = Column(String, unique=True, nullable=False)
+    machine    = Column(String, nullable=True)
+    dept_group = Column(String, nullable=True)
+    col_index  = Column(Integer, nullable=True)
+
+
+class Qualification(Base):
+    __tablename__ = "qualifications"
+    id          = Column(Integer, primary_key=True, index=True)
+    erp_id      = Column(String, nullable=False, index=True)
+    wc_code     = Column(String, nullable=False, index=True)
+    level       = Column(Integer, nullable=True)   # 1–4, NULL = not assessed
+    assessed_by = Column(String, nullable=True)
+    assessed_at = Column(DateTime, nullable=True)
+
+
+class MonthlyReview(Base):
+    __tablename__ = "monthly_reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    period = Column(String, nullable=False, index=True)  # 'YYYY-MM'
+    status = Column(String, default="draft")  # draft | submitted | approved
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    submitted_at = Column(DateTime, nullable=True)
+    submitted_by = Column(String, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    approved_by = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+
+
+class MonthlyReviewEntry(Base):
+    __tablename__ = "monthly_review_entries"
+    id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, nullable=False, index=True)
+    erp_id = Column(String, nullable=True, index=True)
+    department = Column(String, nullable=True)
+    department_en = Column(String, nullable=True)
+    position_en = Column(String, nullable=True)
+    absence_days = Column(Float, default=0)
+    absence_type = Column(String, nullable=True)  # sick | vacation | unpaid | other
+    # Attestation scores (0–100)
+    quality_score = Column(Float, default=100)
+    productivity_score = Column(Float, default=100)
+    attitude_score = Column(Float, default=100)
+    # Pay adjustments (yellow columns from monthly Excel)
+    salary_increase = Column(Float, default=0)   # permanent → applied to actual_net on approval
+    one_time_bonus = Column(Float, default=0)    # Einmalbonus
+    transport = Column(Float, default=0)         # Transport
+    presence_bonus = Column(Float, default=0)    # DPB / Anwesenheitsbonus
+    # Legacy generic bonus (kept for backward compat)
+    bonus_amount = Column(Float, default=0)
+    bonus_reason = Column(String, nullable=True)
+    suggestion = Column(String, nullable=True)   # Забележка / Предложение
+    notes = Column(Text, nullable=True)
+    updated_by = Column(String, nullable=True)
+    updated_at = Column(DateTime, nullable=True)

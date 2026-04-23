@@ -15,10 +15,11 @@ ACCESS_TOKEN_EXPIRE_HOURS = 8
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 ROLE_HIERARCHY = {
-    "admin":   ["admin", "manager", "hr", "payroll"],
+    "admin":   ["admin", "manager", "hr", "payroll", "qs"],
     "manager": ["manager"],
     "hr":      ["hr"],
     "payroll": ["payroll"],
+    "qs":      ["qs"],   # Qualitätssicherung
 }
 
 
@@ -74,7 +75,7 @@ def log_access(db: Session, user: models.User, action: str, resource: str, ip: s
         username=user.username,
         action=action,
         resource=resource,
-        ip_address=ip
+               ip_address=ip
     )
     db.add(log)
     db.commit()
